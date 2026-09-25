@@ -1,0 +1,31 @@
+{
+  "background_color": "#ffffff",
+  "dir": "auto",
+  "display": "fullscreen",
+  "name": "Kənd həyatı",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "Kendheyati",
+  "start_url": "https://ais-pre-bqze57q7mkqefiqb6giov6-673180996970.europe-west2.run.app/",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "https://ais-pre-bqze57q7mkqefiqb6giov6-673180996970.europe-west2.run.app/favicon.ico",
+      "type": "image/x-icon",
+      "isSquare": false,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 0,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    }
+  ],
+  "id": "1992",
+  "description": "Axtardiginiz her sey",
+  "lang": "tr",
+  "categories": [
+    "lifestyle"
+  ]
+}

@@ -1,0 +1,163 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (uid)
+    // Fields:
+    //   - uid: string (required) - The user's unique ID
+    //   - email: string (required) - The user's email address
+    //   - displayName: string (optional) - The user's display name
+    //   - photoURL: string (optional) - The user's profile picture URL
+    //   - lastLogin: timestamp (optional) - Last login time
+    //
+    // Collection: orders
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required) - The ID of the user who placed the order
+    //   - productName: string (required) - The name of the ordered product
+    //   - price: number (required) - The price of the product
+    //   - customerName: string (required) - The name provided by the customer
+    //   - phone: string (required) - The phone number provided by the customer
+    //   - status: string (required) - Current status of the order (pending, processing, completed, cancelled)
+    //   - createdAt: timestamp (required) - When the order was placed
+    //
+    // Collection: user_sales
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required) - The ID of the user who submitted the sale
+    //   - userName: string (required) - The name of the user who submitted the sale
+    //   - userEmail: string (required) - The email of the user who submitted the sale
+    //   - name: string (required) - The name of the product
+    //   - category: string (required) - The category of the product
+    //   - price: number (required) - The price of the product
+    //   - unit: string (required) - The unit of measurement
+    //   - image: string (required) - The image URL or base64 string
+    //   - description: string (required) - A description of the product
+    //   - status: string (required) - Current status of the submission (pending, approved, rejected)
+    //   - createdAt: timestamp (required) - When the sale was submitted
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+          (request.auth.token.email.lower() == "camalmanafov022@gmail.com" && request.auth.token.email_verified == true)
+        );
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      let allowedFields = ['uid', 'email', 'displayName', 'photoURL', 'lastLogin', 'role'];
+      return data.keys().hasOnly(allowedFields) &&
+             data.uid is string && data.uid.size() > 0 &&
+             data.email is string && isValidEmail(data.email);
+    }
+
+    function isValidOrder(data) {
+      let allowedFields = ['userId', 'productName', 'price', 'customerName', 'phone', 'status', 'createdAt', 'estimatedDelivery'];
+      let requiredFields = ['userId', 'productName', 'price', 'customerName', 'phone', 'status', 'createdAt'];
+      return data.keys().hasOnly(allowedFields) &&
+             data.keys().hasAll(requiredFields) &&
+             data.userId is string && data.userId.size() > 0 &&
+             data.productName is string && data.productName.size() > 0 && data.productName.size() < 200 &&
+             data.price is number && data.price >= 0 &&
+             data.customerName is string && data.customerName.size() > 0 && data.customerName.size() < 100 &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() < 30 &&
+             data.status in ['pending', 'processing', 'completed', 'cancelled'] &&
+             data.createdAt is timestamp &&
+             (!('estimatedDelivery' in data) || (data.estimatedDelivery is string && data.estimatedDelivery.size() < 500));
+    }
+
+    function isValidUserSale(data) {
+      let allowedFields = ['orderNumber', 'userId', 'userName', 'userEmail', 'phone', 'name', 'category', 'price', 'unit', 'image', 'description', 'status', 'createdAt'];
+      let requiredFields = ['orderNumber', 'userId', 'userName', 'userEmail', 'phone', 'name', 'category', 'price', 'unit', 'description', 'status', 'createdAt'];
+      return data.keys().hasOnly(allowedFields) &&
+             data.keys().hasAll(requiredFields) &&
+             data.orderNumber is string && data.orderNumber.size() > 0 && data.orderNumber.size() < 50 &&
+             data.userId is string && data.userId.size() > 0 && data.userId.size() < 100 &&
+             data.userName is string && data.userName.size() > 0 && data.userName.size() < 100 &&
+             data.userEmail is string && data.userEmail.size() >= 0 && data.userEmail.size() < 100 &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() < 50 &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             data.category is string && data.category.size() > 0 && data.category.size() < 50 &&
+             data.price is number && data.price >= 0 &&
+             data.unit is string && data.unit.size() > 0 && data.unit.size() < 20 &&
+             (!('image' in data) || (data.image is string && data.image.size() < 1000000)) &&
+             data.description is string && data.description.size() > 0 && data.description.size() < 2000 &&
+             data.status in ['pending', 'approved', 'rejected'] &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == null || request.resource.data.role == 'user' || isAdmin());
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /orders/{orderId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidOrder(request.resource.data);
+      allow update: if (isDocOwner() || isAdmin()) && isValidOrder(request.resource.data) && request.resource.data.userId == resource.data.userId && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /user_sales/{saleId} {
+      allow list: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow get: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidUserSale(request.resource.data);
+      allow update: if isAdmin() && isValidUserSale(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

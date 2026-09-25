@@ -1,0 +1,92 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Information about a registered user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique ID of the user." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "displayName": { "type": "string", "description": "The user's full name." },
+        "photoURL": { "type": "string", "description": "The user's profile picture URL." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the user account was created." }
+      },
+      "required": ["uid", "email"]
+    },
+    "Order": {
+      "title": "Product Order",
+      "description": "Details of a product order placed by a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user who placed the order." },
+        "productName": { "type": "string", "description": "The name of the ordered product." },
+        "price": { "type": "number", "description": "The price of the product." },
+        "customerName": { "type": "string", "description": "The name provided by the customer." },
+        "phone": { "type": "string", "description": "The phone number provided by the customer." },
+        "status": { "type": "string", "enum": ["pending", "processing", "completed", "cancelled"], "description": "Current status of the order." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the order was placed." },
+        "estimatedDelivery": { "type": "string", "description": "The estimated delivery time for the order." }
+      },
+      "required": ["userId", "productName", "price", "customerName", "phone", "status", "createdAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "A product available in the shop.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique ID of the product." },
+        "name": { "type": "string", "description": "The name of the product." },
+        "category": { "type": "string", "description": "The category of the product." },
+        "price": { "type": "number", "description": "The price of the product." },
+        "unit": { "type": "string", "description": "The unit of measurement." },
+        "image": { "type": "string", "description": "The image URL or base64 string." },
+        "description": { "type": "string", "description": "A description of the product." },
+        "stock": { "type": "number", "description": "The current stock level." },
+        "sellerId": { "type": "string", "description": "The ID of the user who submitted the sale." },
+        "sellerPhone": { "type": "string", "description": "The phone number of the seller." },
+        "status": { "type": "string", "enum": ["approved", "pending", "rejected"], "description": "The approval status of the product." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the product was created." }
+      },
+      "required": ["id", "name", "category", "price", "unit", "image", "description", "stock"]
+    },
+    "UserSale": {
+      "title": "User Sale Submission",
+      "description": "A product submitted by a user for sale.",
+      "type": "object",
+      "properties": {
+        "orderNumber": { "type": "string", "description": "A unique order number for the sale." },
+        "userId": { "type": "string", "description": "The ID of the user who submitted the sale." },
+        "userName": { "type": "string", "description": "The name of the user who submitted the sale." },
+        "userEmail": { "type": "string", "description": "The email of the user who submitted the sale." },
+        "phone": { "type": "string", "description": "The phone number of the seller." },
+        "name": { "type": "string", "description": "The name of the product." },
+        "category": { "type": "string", "description": "The category of the product." },
+        "price": { "type": "number", "description": "The price of the product." },
+        "unit": { "type": "string", "description": "The unit of measurement." },
+        "image": { "type": "string", "description": "The image URL or base64 string." },
+        "description": { "type": "string", "description": "A description of the product." },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "The current status of the submission." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the sale was submitted." }
+      },
+      "required": ["orderNumber", "userId", "userName", "userEmail", "phone", "name", "category", "price", "unit", "description", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents."
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Collection of all orders."
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Collection of all products."
+    },
+    "/user_sales/{saleId}": {
+      "schema": "UserSale",
+      "description": "Collection of user-submitted sales."
+    }
+  }
+}
